@@ -25,7 +25,7 @@ from a sub-path, on desktop and phone. There is no backend; everything is comput
   research-faithful ends. At gap 0 the two walls meet along the centre line and are cross-faded over ±1% of the frame width, so
   no hard seam line is drawn.
 - **Start / Stop button and frame scrubber** sit directly under the picture (Space also toggles playback).
-- **Density unevenness** (`density unevenness`, 0–1, default 0.35): film-like uneven density: slowly drifting soft blotches, bands that follow the streaks, and a little grain, applied after the tone shoulder so bright areas show it too. Deterministic per frame (exports match the preview); 0 gives the perfectly even research look (`Trumbull-Strict` uses 0).
+- **Density unevenness** (`density unevenness`, 0–1, default 0.5): uneven density of the *source artwork itself* (procedural art, loaded images and snapshots alike): soft blotches, a finer cloud and grain are multiplied into the back-lit picture before the slit-scan, so the slit stretches them like the picture's own content (streak-aligned density bands, fibre-like grain) and they scroll with it. It is not an overlay on the finished frame. Deterministic (exports match the preview); 0 gives the perfectly even research look (`Trumbull-Strict` uses 0).
 - **Animation and playback**: frame scrubber, `art.scrollPerFrame` with an accel curve (linear / ease-in /
   exponential). Each wall's artwork flows away from the central gap (`mirror slide`; untick for the old same-direction slide).
   Playback uses `exposure.previewSamples`; paused frames use `exposure.samples`.

@@ -1,10 +1,13 @@
 // Compose user images into the panel artwork texture (one additive pass per image). Mirrors imageMap.ts.
 // The image textures are SRGB8_ALPHA8, so sampling returns linear light (correct sRGB handling).
-export const IMAGE_ART_FS = `#version 300 es
+import { UNEVEN_GLSL } from '../core/shaders';
+
+export const IMAGE_ART_FS = (`#version 300 es
 precision highp float;
 in vec2 vUv; out vec4 o;
 uniform sampler2D uImg;
-uniform float uImgAspect, uPanelAspect, uScale, uRot, uContrast, uSat, uSeam;
+uniform float uImgAspect, uPanelAspect, uScale, uRot, uContrast, uSat, uSeam, uUneven, uSeed;
+/*UNEVEN*/
 uniform vec2  uOffset;
 uniform int   uFit, uWrap, uMode, uN, uIdx, uSingle;   // fit: 0 fill 1 fit 2 tile; wrap: 0 mirror 1 repeat; mode: 0 single 1 sequence 2 crossfade
 float wrapC(float t){ return uWrap == 1 ? fract(t) : 1. - abs(1. - mod(t, 2.)); }
@@ -50,5 +53,6 @@ void main(){
     float w = smoothstep(0., uSeam, u) * smoothstep(0., uSeam, 1. - u);
     col = w*evalAt(u, v) + (1. - w)*evalAt(fract(u + .5), v);
   } else col = evalAt(u, v);
+  col *= densityAt((vUv - .5)*vec2(uPanelAspect, 1.), uUneven, uSeed);   // uneven density of the source picture itself
   o = vec4(col, 1.);
-}`;
+}`).replace('/*UNEVEN*/', UNEVEN_GLSL);

@@ -104,7 +104,7 @@ export const DEFAULTS: Params = {
   ...JSON.parse(JSON.stringify(STRICT_DEFAULTS)),
   slit: { height: 6, width: 0.05, offsetX: 1.2, extendEnds: true },  // slit longer than the view: straight inner edges
   panel: { width: 12, height: 8, distance: 0.8 },
-  exposure: { samples: 128, previewSamples: 32, realSeconds: 120, gain: 40, jitter: true, depthFade: 0, sharpness: 0, unevenness: 0.35 },
+  exposure: { samples: 128, previewSamples: 32, realSeconds: 120, gain: 40, jitter: true, depthFade: 0, sharpness: 0, unevenness: 0.5 },
   color: JSON.parse(JSON.stringify(DEFAULT_COLOR)), // colour separation is optional and off, as in the reference frames
 };
 

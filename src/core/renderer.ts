@@ -75,17 +75,17 @@ export class SlitScanRenderer {
     if (p.art.kind === 'image') {
       // user images: composed once into the panel texture; the key covers every input that changes it
       const { files: _files, ...ip } = p.image;
-      const key = `image|${this.images.version}|${JSON.stringify(ip)}|${p.panel.width / p.panel.height}`;
+      const key = `image|${this.images.version}|${JSON.stringify(ip)}|${p.panel.width / p.panel.height}|${p.exposure.unevenness}|${p.art.seed}`;
       if (key !== this.artKey) {
         this.art = this.images.compose(p, () => this.quad(-1, 1));
         this.artKey = key;
       }
       return;
     }
-    const key = `${p.art.kind}|${p.art.seed}|${p.art.alongFreq}|${p.panel.width / p.panel.height}`;
+    const key = `${p.art.kind}|${p.art.seed}|${p.art.alongFreq}|${p.panel.width / p.panel.height}|${p.exposure.unevenness}`;
     if (key !== this.artKey) {
       this.quad(-1, 1);
-      this.procArt = makeArtTexture(this.gl, p.art.kind, p.art.seed, p.art.alongFreq, p.panel.width / p.panel.height, this.procArt ?? undefined);
+      this.procArt = makeArtTexture(this.gl, p.art.kind, p.art.seed, p.art.alongFreq, p.panel.width / p.panel.height, p.exposure.unevenness, this.procArt ?? undefined);
       this.art = this.procArt;
       this.artKey = key;
     }
@@ -167,9 +167,6 @@ export class SlitScanRenderer {
     gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, this.acc);
     gl.uniform1i(gl.getUniformLocation(this.dispProg, 'uAcc'), 0);
     gl.uniform1f(gl.getUniformLocation(this.dispProg, 'uGain'), p.exposure.gain);
-    gl.uniform1f(gl.getUniformLocation(this.dispProg, 'uUneven'), p.exposure.unevenness);
-    gl.uniform1f(gl.getUniformLocation(this.dispProg, 'uFrame'), p.art.frame);
-    gl.uniform1f(gl.getUniformLocation(this.dispProg, 'uAspect'), p.filmAspect);
     this.uploadColor(p);
     this.quad(-1, 1);
     gl.drawArrays(gl.TRIANGLES, 0, 6);

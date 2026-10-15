@@ -105,6 +105,7 @@ export class ImageArtStore {
     gl.uniform1i(u('uFit'), fitIdx); gl.uniform1i(u('uWrap'), ip.wrap === 'repeat' ? 1 : 0);
     gl.uniform1i(u('uMode'), modeIdx); gl.uniform1i(u('uN'), Math.max(1, this.textures.length));
     gl.uniform1i(u('uSingle'), Math.min(ip.index, Math.max(0, this.textures.length - 1)));
+    gl.uniform1f(u('uUneven'), p.exposure.unevenness); gl.uniform1f(u('uSeed'), p.art.seed * 0.137);
     gl.uniform1i(u('uImg'), 0);
     bindQuad();
     for (let i = 0; i < this.textures.length; i++) {

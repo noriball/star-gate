@@ -2,6 +2,24 @@
 // in which its ray passes the slit (mirrors geometry.ts cameraInterval), then average stratified
 // samples of the artwork over that interval, weighted by the exposed fraction of the exposure.
 // Continuous per pixel => no gaps between discrete substeps.
+
+/** Uneven density of the SOURCE artwork (the back-lit panel), shared by the procedural and the image art shaders.
+ * It is multiplied into the picture before the slit-scan, so the slit stretches it like the picture itself: the soft
+ * blotches turn into streak-aligned density bands and the fine grain into fibres. q = panel position in panel-height units. */
+export const UNEVEN_GLSL = `
+float h31(vec3 p){ p = fract(p*vec3(.1031,.1030,.0973)); p += dot(p, p.yxz + 33.33); return fract((p.x + p.y)*p.z); }
+float vn(vec3 p){ vec3 i = floor(p), f = fract(p); f = f*f*(3. - 2.*f);
+  return mix(mix(mix(h31(i), h31(i + vec3(1,0,0)), f.x), mix(h31(i + vec3(0,1,0)), h31(i + vec3(1,1,0)), f.x), f.y),
+             mix(mix(h31(i + vec3(0,0,1)), h31(i + vec3(1,0,1)), f.x), mix(h31(i + vec3(0,1,1)), h31(i + vec3(1,1,1)), f.x), f.y), f.z); }
+float fbm3(vec3 p){ float s = 0., a = .5; for(int i=0;i<4;i++){ s += a*vn(p); p = p*2.03 + 7.1; a *= .5; } return s/.9375; }
+float densityAt(vec2 q, float amount, float seed){
+  if(amount <= 0.) return 1.;
+  float big   = fbm3(vec3(q*vec2(9., 4.), seed)) - .5;                 // soft blotches
+  float mid   = fbm3(vec3(q*vec2(26., 9.) + 17., seed + 3.)) - .5;     // finer cloud
+  float fibre = vn(vec3(q*vec2(120., 46.), seed + 7.)) - .5;           // grain
+  return exp(amount*(5.0*big + 3.0*mid + 1.6*fibre) - .3*amount*amount);
+}
+`;
 export const SLIT_FS = `#version 300 es
 precision highp float;
 in vec2 vUv;
@@ -82,21 +100,6 @@ export const DISPLAY_FS = `#version 300 es
 precision highp float;
 in vec2 vUv; out vec4 o;
 uniform sampler2D uAcc; uniform float uGain;
-uniform float uUneven, uFrame, uAspect;
-// Film-like density unevenness: slowly drifting soft blotches plus bands aligned with the streaks (log-polar noise), and a little grain.
-float h31(vec3 p){ p = fract(p*vec3(.1031,.1030,.0973)); p += dot(p, p.yxz + 33.33); return fract((p.x + p.y)*p.z); }
-float vn(vec3 p){ vec3 i = floor(p), f = fract(p); f = f*f*(3. - 2.*f);
-  return mix(mix(mix(h31(i), h31(i + vec3(1,0,0)), f.x), mix(h31(i + vec3(0,1,0)), h31(i + vec3(1,1,0)), f.x), f.y),
-             mix(mix(h31(i + vec3(0,0,1)), h31(i + vec3(1,0,1)), f.x), mix(h31(i + vec3(0,1,1)), h31(i + vec3(1,1,1)), f.x), f.y), f.z); }
-float fbm3(vec3 p){ float s = 0., a = .5; for(int i=0;i<4;i++){ s += a*vn(p); p = p*2.03 + 7.1; a *= .5; } return s/.9375; }
-float density(vec2 uv){
-  vec2 q = (uv - .5)*vec2(uAspect, 1.)*2.; float z = uFrame*.04;
-  float cloud = fbm3(vec3(q*1.6, z)) - .5;
-  float ang = atan(q.y, q.x), lr = log(length(q) + .06);
-  float rays = fbm3(vec3(cos(ang)*2.2, sin(ang)*2.2, lr*1.8 + z*.5)) - .5;
-  float grain = h31(vec3(gl_FragCoord.xy, uFrame)) - .5;
-  return exp(uUneven*(6.0*cloud + 5.4*rays) - .3*uUneven*uUneven) * (1. + uUneven*.2*grain);   // -0.3·u² keeps the average brightness
-}
 uniform int uColorOn, uStripN, uMix, uLowGamma;
 uniform vec2 uContrast;            // high slope, low slope
 uniform float uSat;
@@ -142,17 +145,17 @@ vec3 colorPass(vec3 a){
 void main(){
   vec3 a = texture(uAcc, vUv).rgb;
   a = 1. - exp(-a * uGain);               // soft film shoulder
-  if(uUneven > 0.) a = clamp(a * density(vUv), 0., 1.);   // uneven density of the emulsion (after the shoulder, so bright areas show it too)
   if(uColorOn == 1) a = colorPass(a);
   if(uSat != 1.) a = saturateOut(a, uSat);      // final output saturation (after colour separation; also with it off)
   o = vec4(pow(a, vec3(1./2.2)), 1.);
 }`;
 
 // Procedural artwork, generators selected by uKind (0 noise, 1 crystal, 2 circuit, 3 bands, 4 facets).
-export const ART_FS = `#version 300 es
+export const ART_FS = (`#version 300 es
 precision highp float;
 in vec2 vUv; out vec4 o;
-uniform float uSeed, uStretch; uniform vec2 uAspect; uniform int uKind;
+uniform float uSeed, uStretch, uUneven, uPA; uniform vec2 uAspect; uniform int uKind;
+/*UNEVEN*/
 float h(vec2 p){ p = fract(p*vec2(123.34,456.21)+uSeed); p += dot(p,p+45.32); return fract(p.x*p.y); }
 vec2 h2(vec2 p){ return vec2(h(p), h(p+7.77)); }
 float n(vec2 p){ vec2 i=floor(p), f=fract(p); f=f*f*(3.-2.*f);
@@ -248,5 +251,6 @@ void main(){
   vec2 p = (vUv - .5) * uAspect * 3.;
   p.x *= uStretch;                         // fine detail along the slide direction => visible flow along the streaks
   vec3 c = uKind == 1 ? crystalArt(p) : (uKind == 2 ? circuitArt(p) : (uKind == 3 ? bandsArt(p) : (uKind == 4 ? facetsArt(p) : noiseArt(p))));
+  c *= densityAt((vUv - .5)*vec2(uPA, 1.), uUneven, uSeed);          // uneven density of the source artwork
   o = vec4(c, 1.);
-}`;
+}`).replace('/*UNEVEN*/', UNEVEN_GLSL);

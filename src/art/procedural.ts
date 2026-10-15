@@ -3,7 +3,7 @@ import { ART_KINDS, type ArtKind } from '../core/params';
 import { makeProgram } from '../core/gl';
 
 /** Renders the procedural test artwork into a mipmapped texture sized to the panel aspect. */
-export function makeArtTexture(gl: WebGL2RenderingContext, kind: ArtKind, seed: number, stretch: number, panelAspect: number, existing?: WebGLTexture): WebGLTexture {
+export function makeArtTexture(gl: WebGL2RenderingContext, kind: ArtKind, seed: number, stretch: number, panelAspect: number, uneven: number, existing?: WebGLTexture): WebGLTexture {
   const H = 1024, W = Math.round(H * panelAspect);
   const tex = existing ?? gl.createTexture()!;
   gl.bindTexture(gl.TEXTURE_2D, tex);
@@ -15,6 +15,8 @@ export function makeArtTexture(gl: WebGL2RenderingContext, kind: ArtKind, seed: 
   gl.useProgram(prog);
   gl.uniform1f(gl.getUniformLocation(prog, 'uSeed'), seed * 0.137);
   gl.uniform1f(gl.getUniformLocation(prog, 'uStretch'), stretch);
+  gl.uniform1f(gl.getUniformLocation(prog, 'uUneven'), uneven);
+  gl.uniform1f(gl.getUniformLocation(prog, 'uPA'), panelAspect);
   gl.uniform1i(gl.getUniformLocation(prog, 'uKind'), ART_KINDS.indexOf(kind));
   gl.uniform2f(gl.getUniformLocation(prog, 'uAspect'), panelAspect, 1);
   gl.viewport(0, 0, W, H);
