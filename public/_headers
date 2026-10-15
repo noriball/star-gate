@@ -1,0 +1,15 @@
+# Headers for Netlify and Cloudflare Pages (copied into dist/ by the build). GitHub Pages ignores this file.
+# Camera access needs HTTPS, which these hosts provide.
+/*
+  Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data:; media-src 'self' blob:; connect-src 'self' blob:; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'
+  Permissions-Policy: camera=(self), microphone=(), geolocation=(), payment=()
+  Referrer-Policy: no-referrer
+  X-Content-Type-Options: nosniff
+/sw.js
+  Cache-Control: no-cache
+/index.html
+  Cache-Control: no-cache
+/manifest.webmanifest
+  Cache-Control: no-cache
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable

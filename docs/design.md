@@ -34,9 +34,10 @@
 | slit.width | 0.05 ft | 0.01〜0.3 | 未確認(細い、のみ) |
 | slit.offsetX | 0.8 ft (Strict) / 1.2 ft (アプリ既定) | 0〜3 | 「中心からオフセット」 |
 | art.kind = image / image.* | 手続き原画 | 自前画像 | 拡張: PNG/JPEG/WebP(複数可)を原画に使用。モード single/sequence/crossfade、fit/fill/tile、wrap mirror/repeat、scale/offset/rotation、contrast/saturation。paramsにはファイル名・サイズ・ハッシュのみ保存(欠落時は警告、書き出し拒否) |
+| slit.extendEnds | true(既定) / false(Strict) | on/off | 拡張: スリット端と背面パネル端を視野外とみなす。off では有限(6ft/8ft)の端が中央ギャップ脇に斜めの切れ込み(キンク)として見える |
 | color.saturation | 1 | 0〜2 | 拡張: 最終出力の彩度(Rec.709輝度保存・色域内に制限)。色分解の有無によらず適用 |
 | image.sample | null | 同梱サンプル8種のid | 拡張: scripts/make-samples.mjs が生成するサンプル原画(public/samples)。idのみ保存 |
-| centreGap | 0.1093 (既定形状の自然値) | 0〜0.3 | 拡張: 中央の無露光帯の幅(画面幅比、上下方向では高さ比)。壁を水平方向にリマップして直接指定。既定値では恒等変換 |
+| centreGap | 0.005(固定) | ユーザ判断で固定 | 中央の無露光帯の幅(画面幅比、上下方向では高さ比)。壁を水平方向にリマップ。モデル本来のギャップは約0.109 |
 | orientation | left-right | left-right / top-bottom | 拡張: 縦スリット(左右の壁・縦の空白)か、同じ効果を90°回した横スリット(上下の壁・横の空白)。常にどちらか一方 |
 | panel.width | 12 ft | 固定可 | 確認済 |
 | track.length | 14 ft | 6〜20 | 単一ソース |

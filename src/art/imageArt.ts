@@ -15,7 +15,9 @@ export class ImageArtStore {
   private aspects: number[] = [];
   version = 0; // bumps whenever the set of images changes
   sampleId: string | null = null; // set when the loaded image is a bundled sample
+  sourceKind: 'file' | 'sample' | 'camera' | null = null; // where the loaded image came from (a camera snapshot cannot be reloaded from a project)
   readonly maxSide: number;
+  private sources: File[] = [];   // kept so the textures can be rebuilt after a WebGL context loss
   private prog: WebGLProgram;
   private target: WebGLTexture | null = null;
   private fbo: WebGLFramebuffer;
@@ -29,6 +31,9 @@ export class ImageArtStore {
 
   get count() { return this.textures.length; }
 
+  /** What is needed to load the same images again (context restore). */
+  snapshotSources() { return { files: [...this.sources], sample: this.sampleId, kind: this.sourceKind === 'camera' ? 'camera' as const : 'file' as const }; }
+
   /** Load one of the bundled samples (fetched from the app's own static files). */
   async loadSample(id: string, url: string): Promise<ImageFileInfo[]> {
     const r = await fetch(url);
@@ -37,13 +42,13 @@ export class ImageArtStore {
   }
 
   clear() {
-    this.sampleId = null;
+    this.sampleId = null; this.sourceKind = null; this.sources = [];
     for (const t of this.textures) this.gl.deleteTexture(t);
     this.textures = []; this.aspects = []; this.files.length = 0; this.version++;
   }
 
   /** Replace the loaded set (max 8 images). Large images are downscaled to maxSide. Returns the metadata to store in the params. */
-  async load(list: File[], sample: string | null = null): Promise<ImageFileInfo[]> {
+  async load(list: File[], sample: string | null = null, kind: 'file' | 'camera' = 'file'): Promise<ImageFileInfo[]> {
     const gl = this.gl;
     const picked = list.filter(isAcceptedImage).slice(0, MAX_IMAGES);
     if (!picked.length) throw new Error('No PNG/JPEG/WebP file among the dropped files.');
@@ -51,7 +56,7 @@ export class ImageArtStore {
     try {
       for (const f of picked) {
         const bytes = new Uint8Array(await f.arrayBuffer());
-        const bmp = await createImageBitmap(new Blob([bytes], { type: f.type || 'image/png' }), { premultiplyAlpha: 'none', colorSpaceConversion: 'default' });
+        const bmp = await createImageBitmap(new Blob([bytes], { type: f.type || 'image/png' }), { premultiplyAlpha: 'none', colorSpaceConversion: 'default', imageOrientation: 'from-image' }   /* honour EXIF rotation: portrait phone photos stay upright */);
         const sz = fitMaxSize(bmp.width, bmp.height, this.maxSide);
         const c = document.createElement('canvas'); c.width = sz.width; c.height = sz.height;
         const x = c.getContext('2d')!; x.fillStyle = '#000'; x.fillRect(0, 0, c.width, c.height); // transparent areas give no light
@@ -71,7 +76,7 @@ export class ImageArtStore {
       }
     } catch (e) { staged.forEach(s => gl.deleteTexture(s.tex)); throw e; }
     this.clear();
-    this.sampleId = sample;
+    this.sampleId = sample; this.sourceKind = sample ? 'sample' : kind; this.sources = picked;
     for (const s of staged) { this.textures.push(s.tex); this.aspects.push(s.aspect); this.files.push(s.info); }
     return this.files.map(f => ({ ...f }));
   }

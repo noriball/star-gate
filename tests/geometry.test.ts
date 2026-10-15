@@ -322,6 +322,7 @@ describe('scroll direction per wall (artwork flows away from the central gap)', 
   });
 });
 
+import { FIXED_CENTRE_GAP } from '../src/core/params';
 import { gapBlend, gapMap, innerEdge, naturalGap } from '../src/core/geometry';
 
 describe('centre gap control', () => {
@@ -340,14 +341,17 @@ describe('centre gap control', () => {
     return (lo + hi) / 2;
   };
 
-  it('default gap value is the natural gap of the default geometry (~0.1093 of the frame width) and the map is the identity there', () => {
-    expect(APP_DEFAULTS.centreGap).toBeCloseTo(naturalGap(APP_DEFAULTS), 12);
-    expect(APP_DEFAULTS.centreGap).toBeCloseTo(0.1093, 3);
-    for (const x of [-0.99, -0.3, -0.12, 0, 0.12, 0.5, 0.99]) for (const y of [-0.9, 0, 0.9]) expect(gapMap(x, y, APP_DEFAULTS)).toBe(x);
+  it('the centre gap is fixed at 0.005 in the defaults and every preset; the map is the identity at the natural gap only', () => {
+    expect(FIXED_CENTRE_GAP).toBe(0.005);
+    expect(APP_DEFAULTS.centreGap).toBe(0.005);
+    for (const pr of PRESETS) expect(pr.params.centreGap).toBe(0.005);
+    expect(naturalGap(APP_DEFAULTS)).toBeCloseTo(0.1093, 3);          // the physical geometry's gap is unchanged
+    const nat = withGap(naturalGap(base));
+    for (const x of [-0.99, -0.3, -0.12, 0, 0.12, 0.5, 0.99]) for (const y of [-0.9, 0, 0.9]) expect(gapMap(x, y, nat)).toBe(x);
   });
 
   it('natural gap equals the measured dark band of the physical render', () => {
-    expect(gapHalfWidth(base)).toBeCloseTo(naturalGap(base), 3);
+    expect(gapHalfWidth(withGap(naturalGap(base)))).toBeCloseTo(naturalGap(base), 3);
   });
 
   it('the visible gap equals the control value for any setting, in both orientations', () => {
@@ -448,8 +452,7 @@ describe('centre gap control', () => {
     expect(gapMap(0.5, 0, q)!).toBeGreaterThan(0); expect(gapMap(-0.5, 0, q)!).toBeLessThan(0);
   });
 
-  it('every preset carries its own natural gap; the control is part of the saved params JSON', () => {
-    for (const pr of PRESETS) expect(pr.params.centreGap).toBeCloseTo(naturalGap(pr.params), 12);
+  it('the control is part of the saved params JSON', () => {
     const json = JSON.parse(JSON.stringify(withGap(0.05)));
     expect(json.centreGap).toBe(0.05);
   });

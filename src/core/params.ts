@@ -5,7 +5,7 @@ import { DEFAULT_COLOR, VIVID_COLOR, type ColorParams } from '../color/config';
 export const ART_KINDS = ['noise', 'crystal', 'circuit', 'bands', 'facets', 'image'] as const; // 'image' = the user's own files
 export type ArtKind = (typeof ART_KINDS)[number];
 
-import { naturalGap, type Orientation } from './geometry';
+import type { Orientation } from './geometry';
 import type { Fit, ImageFileInfo, SeqMode, Wrap } from '../art/imageMap';
 
 /** User-image artwork. Images themselves are not stored in the params: only their name, size and a content hash. */
@@ -30,7 +30,7 @@ export interface Params {
   exposure: { samples: number; previewSamples: number; realSeconds: number; gain: number; jitter: boolean; depthFade: number; sharpness: number };
   art: { kind: ArtKind; scrollPerFrame: number; frame: number; frames: number; seed: number; alongFreq: number; mirrorSlide: boolean };
   doubleExposure: boolean;
-  centreGap: number; // visible width of the central unexposed gap, fraction of frame width (height in top-bottom)
+  centreGap: number; // visible width of the central unexposed gap, fraction of frame width (height in top-bottom); locked to FIXED_CENTRE_GAP in the UI
   orientation: Orientation; // 'left-right' (default) or 'top-bottom': the same tunnel rotated 90°, one at a time
   color: ColorParams;
   accel: 'linear' | 'ease-in' | 'exponential';
@@ -107,10 +107,11 @@ export const DEFAULTS: Params = {
   color: JSON.parse(JSON.stringify(DEFAULT_COLOR)), // colour separation is optional and off, as in the reference frames
 };
 
-/** Return p with the centre-gap control set to the gap its own geometry produces (the 'no remap' value). */
-export function withNaturalGap(p: Params): Params { p.centreGap = naturalGap(p); return p; }
-withNaturalGap(STRICT_DEFAULTS);
-withNaturalGap(DEFAULTS);
+/** The centre gap is fixed by user decision: 0.5% of the frame width (height in top-bottom). The slider is locked to it. */
+export const FIXED_CENTRE_GAP = 0.005;
+export function withFixedGap(p: Params): Params { p.centreGap = FIXED_CENTRE_GAP; return p; }
+withFixedGap(STRICT_DEFAULTS);
+withFixedGap(DEFAULTS);
 
 export type Preset = { name: string; params: Params };
 
@@ -137,5 +138,5 @@ const RAW_PRESETS: Preset[] = [
   { name: 'Free', params: clone(DEFAULTS) },
 ];
 
-/** Every preset carries the centre gap its own geometry produces (so loading a preset never remaps). */
-export const PRESETS: Preset[] = RAW_PRESETS.map(pr => ({ ...pr, params: withNaturalGap(pr.params) }));
+/** Every preset uses the fixed centre gap. */
+export const PRESETS: Preset[] = RAW_PRESETS.map(pr => ({ ...pr, params: withFixedGap(pr.params) }));

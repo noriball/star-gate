@@ -1,6 +1,7 @@
 import type { Params } from './params';
 import { effectiveGap, gatherSamples, naturalGap, panelOffset, slitSides, tanHalf } from './geometry';
 import { makeProgram } from './gl';
+import { FeatureError, chooseFloatFormat } from './features';
 import { DISPLAY_FS, FULL_VS, SLIT_FS } from './shaders';
 import { wheelStates } from '../color/wheel';
 import { makeArtTexture } from '../art/procedural';
@@ -24,17 +25,19 @@ export class SlitScanRenderer {
 
   constructor(private canvas: HTMLCanvasElement) {
     const gl = canvas.getContext('webgl2', { antialias: false, preserveDrawingBuffer: true });
-    if (!gl) throw new Error('WebGL2 not available');
-    this.gl = gl;
-    if (!gl.getExtension('EXT_color_buffer_float')) throw new Error('EXT_color_buffer_float required');
-    this.floatFormat = gl.getExtension('EXT_float_blend') ? 'RGBA32F' : 'RGBA16F';
-    this.slitProg = makeProgram(gl, FULL_VS, SLIT_FS);
-    this.dispProg = makeProgram(gl, FULL_VS, DISPLAY_FS);
-    this.vbo = gl.createBuffer()!;
-    this.images = new ImageArtStore(gl);
-    this.acc = gl.createTexture()!;
-    this.fbo = gl.createFramebuffer()!;
-    gl.enableVertexAttribArray(0);
+    // (the checks below run on `gl`; `this.gl` is assigned once they pass)
+    const choice = chooseFloatFormat({ webgl2: !!gl, colorBufferFloat: !!gl?.getExtension('EXT_color_buffer_float'), colorBufferHalfFloat: !!gl?.getExtension('EXT_color_buffer_half_float') });
+    if ('error' in choice) throw new FeatureError(choice.error);
+    this.gl = gl!;
+    const gl2 = gl!;
+    this.floatFormat = choice.format;
+    this.slitProg = makeProgram(gl2, FULL_VS, SLIT_FS);
+    this.dispProg = makeProgram(gl2, FULL_VS, DISPLAY_FS);
+    this.vbo = gl2.createBuffer()!;
+    this.images = new ImageArtStore(gl2);
+    this.acc = gl2.createTexture()!;
+    this.fbo = gl2.createFramebuffer()!;
+    gl2.enableVertexAttribArray(0);
   }
 
   private floatTex(tex: WebGLTexture, fbo: WebGLFramebuffer, w: number, h: number) {

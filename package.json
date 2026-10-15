@@ -8,7 +8,10 @@
     "build": "tsc --noEmit && vite build",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
-    "samples": "node scripts/make-samples.mjs"
+    "samples": "node scripts/make-samples.mjs",
+    "dev:https": "node scripts/dev-cert.mjs && VITE_HTTPS=1 vite --host",
+    "preview": "vite build && vite preview",
+    "icons": "node scripts/make-icons.mjs"
   },
   "devDependencies": {
     "typescript": "^7.0.2",
