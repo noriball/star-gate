@@ -65,7 +65,7 @@ npm install
 npm run dev          # http://127.0.0.1:5173
 npm run dev:https    # HTTPS with a self-signed certificate on your LAN address, for testing the camera on a phone (see below)
 ```
-Parameters are in the right-hand panel (a bottom sheet on narrow screens); ranges are in `docs/design.md` §4.
+Only controls with a clearly visible effect are shown in the panel (a bottom sheet on narrow screens): *Look* (`exposure.gain`, `panel.distance`, `camera.fovY`), *Animation*, *Artwork*, *Colour separation* (`saturation (output)`, plus the wheel period once separation is on) and, in image mode, the image placement sliders. All other parameters keep their preset values and are still saved/loaded in the params JSON (ranges: `docs/design.md` §4).
 
 ## Test / build / preview
 ```sh

@@ -1,4 +1,3 @@
-import { STRIP_PRESETS, parseStrips } from '../color/config';
 import { FIXED_CENTRE_GAP } from '../core/params';
 import { CameraController, defaultFacing, takeSnapshot, type CameraError, type Facing } from '../art/camera';
 import { SAMPLES, sampleThumbUrl } from '../art/samples';
@@ -18,15 +17,13 @@ function set(p: Params, path: string, v: number) {
 
 const LABELS: Record<string, string> = { 'color.saturation': 'saturation (output)', 'image.saturation': 'image saturation', centreGap: 'centre gap (fixed)' };
 
+// Only controls whose effect is clearly visible are shown. Everything else keeps its (preset) value and is still saved/loaded.
 const GROUPS: [string, Path[]][] = [
-  ['Slit', ['centreGap', 'slit.height', 'slit.width', 'slit.offsetX']],
-  ['Panel', ['panel.width', 'panel.height', 'panel.distance']],
-  ['Camera track', ['track.length', 'track.nearDistance', 'camera.fovY', 'camera.fStop']],
-  ['Exposure', ['exposure.samples', 'exposure.previewSamples', 'exposure.gain', 'exposure.depthFade', 'exposure.sharpness', 'exposure.realSeconds']],
-  ['Animation', ['art.frame', 'art.frames', 'art.scrollPerFrame']],
-  ['Artwork', ['art.seed', 'art.alongFreq']],
-  ['Image artwork', ['image.index', 'image.scale', 'image.offsetX', 'image.offsetY', 'image.rotation', 'image.contrast', 'image.saturation', 'image.seamBlend']],
-  ['Colour separation', ['color.saturation', 'color.seed', 'color.period', 'color.contrastHigh', 'color.contrastLow']],
+  ['Look', ['exposure.gain', 'panel.distance', 'camera.fovY']],
+  ['Animation', ['art.frame', 'art.scrollPerFrame']],
+  ['Artwork', ['art.seed']],
+  ['Image artwork', ['image.index', 'image.scale', 'image.offsetX', 'image.offsetY', 'image.rotation']],
+  ['Colour separation', ['color.saturation', 'color.period']],
 ];
 
 export interface Playback { playing: boolean }
@@ -76,59 +73,18 @@ export function buildPanel(root: HTMLElement, params: Params, playback: Playback
       play.onclick = () => { playback.playing = !playback.playing; label(); onChange(); };
       label(); root.append(play);
     }
-    if (title === 'Colour separation') {
-      root.append(checkbox('enabled', () => params.color.enabled, v => (params.color.enabled = v)));
-      root.append(select('wheel mode', ['smooth', 'step'], () => params.color.mode, v => (params.color.mode = v as 'smooth' | 'step')));
-      root.append(select('low curve', ['lift', 'gamma'], () => params.color.lowCurve, v => (params.color.lowCurve = v as 'lift' | 'gamma')));
-      root.append(select('wheel style', ['classic', 'vivid'], () => params.color.wheelStyle, v => (params.color.wheelStyle = v as 'classic' | 'vivid')));
-      root.append(select('mix', ['add', 'screen'], () => params.color.mix, v => (params.color.mix = v as 'add' | 'screen')));
-      root.append(select('strips', [...Object.keys(STRIP_PRESETS), 'custom'], () => params.color.stripPreset, v => {
-        params.color.stripPreset = v;
-        if (v !== 'custom') params.color.strips = STRIP_PRESETS[v].map(x => ({ ...x }));
-        syncStrips();
-      }));
-    }
+    if (title === 'Colour separation') root.append(checkbox('separation on', () => params.color.enabled, v => (params.color.enabled = v)));
     if (title === 'Artwork') root.append(select('kind', [...ART_KINDS], () => params.art.kind, v => (params.art.kind = v as Params['art']['kind'])));
     if (title === 'Image artwork') root.append(imageBlock());
     for (const path of paths) root.append(slider(path, RANGES[path]));
   }
 
-  const ta = document.createElement('textarea');
-  ta.rows = 6; ta.style.cssText = 'width:100%;box-sizing:border-box;background:#1c1c22;color:#ddd;border:1px solid #333;font:11px monospace';
-  const err = document.createElement('div'); err.style.color = '#e88';
-  const apply = document.createElement('button'); apply.textContent = 'Apply strip JSON';
-  function syncStrips() { ta.value = JSON.stringify(params.color.strips); err.textContent = ''; }
-  apply.onclick = () => {
-    try {
-      params.color.strips = parseStrips(JSON.parse(ta.value));
-      params.color.stripPreset = 'custom'; sync.forEach(f => f()); err.textContent = ''; onChange();
-    } catch (e) { err.textContent = (e as Error).message; }
-  };
-  sync.push(syncStrips); syncStrips();
-  root.append(ta, apply, err);
 
   const g = document.createElement('h2'); g.textContent = 'Options'; root.append(g);
   root.append(select('accel', ['linear', 'ease-in', 'exponential'], () => params.accel, v => (params.accel = v as Params['accel'])));
   root.append(select('orientation', ['left-right', 'top-bottom'], () => params.orientation, v => (params.orientation = v as Params['orientation'])));
-  root.append(checkbox('extend slit & panel ends (no notch)', () => params.slit.extendEnds, v => (params.slit.extendEnds = v)));
-  root.append(checkbox('mirror slide (walls flow outward)', () => params.art.mirrorSlide, v => (params.art.mirrorSlide = v)));
   root.append(checkbox('double exposure', () => params.doubleExposure, v => (params.doubleExposure = v)));
-  root.append(checkbox('jitter (dither)', () => params.exposure.jitter, v => (params.exposure.jitter = v)));
-  const json = document.createElement('button');
-  json.textContent = 'Copy params JSON';
-  json.onclick = () => navigator.clipboard?.writeText(JSON.stringify(params, null, 2));
-  const imp = document.createElement('textarea'); imp.rows = 3; imp.placeholder = 'paste params JSON here';
-  imp.style.cssText = 'width:100%;box-sizing:border-box;background:#1c1c22;color:#ddd;border:1px solid #333;font:11px monospace;margin-top:6px';
-  const impBtn = document.createElement('button'); impBtn.textContent = 'Load params JSON';
-  const impErr = document.createElement('div'); impErr.style.color = '#e88';
-  impBtn.onclick = () => {
-    try {
-      mergeParams(params, JSON.parse(imp.value)); params.centreGap = FIXED_CENTRE_GAP; impErr.textContent = ''; sync.forEach(f => f()); onChange();
-      if (params.art.kind === 'image' && params.image.sample && hooks.sampleId() !== params.image.sample) void (window as any).__pickSample(params.image.sample); // bundled: reload it automatically
-    }
-    catch (e) { impErr.textContent = (e as Error).message; }
-  };
-  root.append(json, imp, impBtn, impErr, infoEl);
+  root.append(infoEl);
 
   function refreshInfo() { infoEl.textContent = info(); }
 
@@ -287,6 +243,9 @@ export function buildPanel(root: HTMLElement, params: Params, playback: Playback
       show(); refreshInfo(); onChange();
     };
     sync.push(show); show();
+    // controls that only matter in a given mode are hidden otherwise (image controls: image artwork; wheel period: colour separation)
+    const visible = path.startsWith('image.') ? () => params.art.kind === 'image' : path === 'color.period' ? () => params.color.enabled : null;
+    if (visible) { const vis = () => { row.style.display = visible() ? '' : 'none'; }; sync.push(vis); vis(); }
     row.append(label, inp, out);
     return row;
   }
@@ -295,7 +254,7 @@ export function buildPanel(root: HTMLElement, params: Params, playback: Playback
     const l = document.createElement('label'); l.textContent = name;
     const s = document.createElement('select'); opts.forEach(o => s.add(new Option(o)));
     const show = () => (s.value = getter());
-    s.onchange = () => { setter(s.value); onChange(); };
+    s.onchange = () => { setter(s.value); sync.forEach(f => f()); onChange(); };
     sync.push(show); show();
     row.append(l, s); return row;
   }
@@ -304,7 +263,7 @@ export function buildPanel(root: HTMLElement, params: Params, playback: Playback
     const l = document.createElement('label'); l.textContent = name;
     const c = document.createElement('input'); c.type = 'checkbox';
     const show = () => (c.checked = getter());
-    c.onchange = () => { setter(c.checked); onChange(); };
+    c.onchange = () => { setter(c.checked); sync.forEach(f => f()); onChange(); };
     sync.push(show); show();
     row.append(l, c); return row;
   }
