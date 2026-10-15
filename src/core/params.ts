@@ -27,7 +27,7 @@ export interface Params {
   panel: { width: number; height: number; distance: number };
   track: { length: number; nearDistance: number };
   camera: { fovY: number; fStop: number };
-  exposure: { samples: number; previewSamples: number; realSeconds: number; gain: number; jitter: boolean; depthFade: number; sharpness: number };
+  exposure: { samples: number; previewSamples: number; realSeconds: number; gain: number; jitter: boolean; depthFade: number; sharpness: number; unevenness: number };
   art: { kind: ArtKind; scrollPerFrame: number; frame: number; frames: number; seed: number; alongFreq: number; mirrorSlide: boolean };
   doubleExposure: boolean;
   centreGap: number; // visible width of the central unexposed gap, fraction of frame width (height in top-bottom); locked to FIXED_CENTRE_GAP in the UI
@@ -56,6 +56,7 @@ export const RANGES = {
   'exposure.realSeconds': { min: 45, max: 300, step: 5 }, // info only
   'exposure.depthFade': { min: 0, max: 2, step: 0.05 },
   'exposure.sharpness': { min: 0, max: 0.95, step: 0.05 },
+  'exposure.unevenness': { min: 0, max: 1, step: 0.05 },
   'exposure.gain': { min: 1, max: 1000, step: 1, log: true },
   'art.scrollPerFrame': { min: 0, max: 0.2, step: 0.005 },
   'art.frames': { min: 24, max: 1200, step: 1 },
@@ -84,7 +85,7 @@ export const STRICT_DEFAULTS: Params = {
   panel: { width: 12, height: 8, distance: 2 },
   track: { length: 14, nearDistance: 1.5 },
   camera: { fovY: 35, fStop: 1.8 },
-  exposure: { samples: 128, previewSamples: 32, realSeconds: 120, gain: 60, jitter: true, depthFade: 0, sharpness: 0 },
+  exposure: { samples: 128, previewSamples: 32, realSeconds: 120, gain: 60, jitter: true, depthFade: 0, sharpness: 0, unevenness: 0 },
   art: { kind: 'noise', scrollPerFrame: 0.01, frame: 0, frames: 240, seed: 7, alongFreq: 1, mirrorSlide: true },
   doubleExposure: true,
   centreGap: 0, // set to the natural gap below
@@ -103,7 +104,7 @@ export const DEFAULTS: Params = {
   ...JSON.parse(JSON.stringify(STRICT_DEFAULTS)),
   slit: { height: 6, width: 0.05, offsetX: 1.2, extendEnds: true },  // slit longer than the view: straight inner edges
   panel: { width: 12, height: 8, distance: 0.8 },
-  exposure: { samples: 128, previewSamples: 32, realSeconds: 120, gain: 40, jitter: true, depthFade: 0, sharpness: 0 },
+  exposure: { samples: 128, previewSamples: 32, realSeconds: 120, gain: 40, jitter: true, depthFade: 0, sharpness: 0, unevenness: 0.35 },
   color: JSON.parse(JSON.stringify(DEFAULT_COLOR)), // colour separation is optional and off, as in the reference frames
 };
 

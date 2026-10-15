@@ -34,11 +34,24 @@ const uiSettings: UiSettings = saved ? saved.ui : { ...DEFAULT_UI, lowPower: isP
 const playback = { playing: false };
 
 let panelUi: ReturnType<typeof buildPanel>;
+const playBtn = document.getElementById('play') as HTMLButtonElement;
+const scrub = document.getElementById('scrub') as HTMLInputElement;
+const frameLabel = document.getElementById('frame-label')!;
 let dirty = true, exporting = false, contextLost = false;
 let last = 0, acc = 0, drewPreview = false, adaptiveH = 0, ema = 16, saveTimer = 0;
 
 function persist() { clearTimeout(saveTimer); saveTimer = window.setTimeout(() => saveSettings(params, uiSettings, store), 400); }
-function schedule() { dirty = true; persist(); }
+function schedule() { dirty = true; persist(); syncTransport(); }
+
+/** The Start/Stop button and frame scrubber under the picture. */
+function syncTransport() {
+  playBtn.textContent = playback.playing ? '❚❚ Stop' : '▶ Start';
+  playBtn.setAttribute('aria-pressed', String(playback.playing));
+  playBtn.disabled = exporting;
+  scrub.max = String(Math.max(1, params.art.frames - 1)); scrub.value = String(params.art.frame);
+  frameLabel.textContent = `${params.art.frame + 1} / ${params.art.frames}`;
+}
+function togglePlay() { if (exporting) return; playback.playing = !playback.playing; syncTransport(); dirty = true; }
 
 // ---- preview resolution: user quality, screen size/DPR, and (auto) adaptive scaling while playing
 const QUALITY_H = { high: 720, medium: 540, low: 360 } as const;
@@ -73,7 +86,7 @@ function tick(now: number) {
     if (step > 0) {
       acc -= (step * 1000) / FPS;
       params.art.frame = (params.art.frame + step) % params.art.frames;
-      panelUi.syncAll(); dirty = true;
+      panelUi.syncAll(); syncTransport(); dirty = true;
     }
   } else acc = 0;
   if (!dirty) return;
@@ -100,7 +113,11 @@ buildExportPanel(panelEl, canvas, () => renderer, params,
     if (params.image.sample) return renderer.images.sampleId === params.image.sample ? null : `Sample image "${params.image.sample}" is still loading.`;
     const st = imageStatus(params.image.files, renderer.images.files);
     return st.state === 'ok' ? null : (st as { message: string }).message;
-  }, () => { playback.playing = false; exporting = true; }, () => { exporting = false; dirty = true; });
+  }, () => { playback.playing = false; exporting = true; syncTransport(); }, () => { exporting = false; dirty = true; syncTransport(); });
+playBtn.addEventListener('click', togglePlay);
+scrub.addEventListener('input', () => { params.art.frame = +scrub.value; panelUi.syncAll(); schedule(); });
+window.addEventListener('keydown', e => { if (e.code === 'Space' && !/^(INPUT|TEXTAREA|SELECT|BUTTON)$/.test((e.target as HTMLElement).tagName)) { e.preventDefault(); togglePlay(); } });
+syncTransport();
 (window as any).__star = { params, get renderer() { return renderer; }, schedule, playback, uiSettings };
 
 // a restored project that used a bundled sample reloads it (user files cannot be restored)

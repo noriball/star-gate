@@ -13,13 +13,20 @@
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="manifest" href="manifest.webmanifest">
 <style>
-  :root { color-scheme: dark; --sheet-handle: 46px; }
+  :root { color-scheme: dark; --sheet-handle: 46px; --transport-h: 66px; }
   * { box-sizing: border-box; }
   html, body { height: 100%; }
   body { margin:0; background:#0a0a0c; color:#cfd2d8; font:13px/1.4 system-ui,-apple-system,sans-serif; display:flex; height:100vh; height:100dvh; overflow:hidden;
          padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); }
-  #stage { flex:1; display:flex; align-items:center; justify-content:center; min-width:0; min-height:0; }
-  canvas { max-width:100%; max-height:100%; background:#000; }
+  #main { flex:1; display:flex; flex-direction:column; justify-content:center; align-items:stretch; min-width:0; min-height:0; }
+  #stage { flex:0 1 auto; display:flex; align-items:center; justify-content:center; min-width:0; min-height:0; }
+  #transport { display:flex; align-items:center; gap:12px; padding:10px 14px; border-top:1px solid #1d1d22; background:#0d0d10; }
+  #play { min-width:116px; min-height:44px; font-size:16px; font-weight:600; letter-spacing:.04em; background:#2a4a8a; border-color:#4a76c8; color:#fff; border-radius:8px; cursor:pointer; }
+  #play[aria-pressed=true] { background:#5a2a3a; border-color:#a84a64; }
+  #play:disabled { opacity:.5; }
+  #scrub { flex:1; min-width:0; height:28px; }
+  #frame-label { font-variant-numeric:tabular-nums; color:#8a8f99; min-width:6.5em; text-align:right; }
+  canvas { display:block; max-width:100%; max-height:calc(100dvh - var(--transport-h) - env(safe-area-inset-top) - env(safe-area-inset-bottom)); background:#000; }
   #panel { width:320px; overflow-y:auto; overscroll-behavior:contain; padding:12px 14px; border-left:1px solid #222; background:#111114; -webkit-overflow-scrolling:touch; }
   #panel h1 { font-size:14px; margin:0 0 8px; letter-spacing:.1em; }
   #panel h2 { font-size:11px; text-transform:uppercase; letter-spacing:.1em; color:#8a8f99; margin:14px 0 4px; }
@@ -36,7 +43,9 @@
   /* phones / narrow windows: the panel becomes a bottom sheet, the picture keeps the rest of the screen */
   @media (max-width: 820px) {
     body { flex-direction:column; }
-    #stage { padding-bottom: var(--sheet-handle); }
+    #main { padding-bottom: var(--sheet-handle); }
+    canvas { max-height: calc(100dvh - var(--transport-h) - var(--sheet-handle) - env(safe-area-inset-top) - env(safe-area-inset-bottom)); }
+    #transport { padding:8px 12px; }
     #panel { position:fixed; left:0; right:0; bottom:0; width:auto; max-height:min(68dvh, 560px); border-left:0; border-top:1px solid #333; border-radius:14px 14px 0 0;
              padding: 10px 14px calc(14px + env(safe-area-inset-bottom)); transform: translateY(calc(100% - var(--sheet-handle) - env(safe-area-inset-bottom))); z-index:5; box-shadow:0 -6px 24px #000a; }
     body.sheet-open #panel { transform:none; }
@@ -58,7 +67,14 @@
 </style>
 </head>
 <body>
-<div id="stage"><canvas id="c"></canvas></div>
+<div id="main">
+  <div id="stage"><canvas id="c"></canvas></div>
+  <div id="transport">
+    <button id="play" type="button" aria-pressed="false">▶ Start</button>
+    <input id="scrub" type="range" min="0" max="239" value="0" step="1" aria-label="frame">
+    <span id="frame-label">1 / 240</span>
+  </div>
+</div>
 <div id="panel"></div>
 <button id="sheet-toggle" type="button" aria-expanded="false" aria-controls="panel">☰ Controls</button>
 <script type="module" src="/src/main.ts"></script>

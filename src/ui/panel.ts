@@ -15,11 +15,11 @@ function set(p: Params, path: string, v: number) {
   ks.reduce((o: any, k) => o[k], p)[last] = v;
 }
 
-const LABELS: Record<string, string> = { 'color.saturation': 'saturation (output)', 'image.saturation': 'image saturation', centreGap: 'centre gap (fixed)' };
+const LABELS: Record<string, string> = { 'exposure.unevenness': 'density unevenness', 'color.saturation': 'saturation (output)', 'image.saturation': 'image saturation', centreGap: 'centre gap (fixed)' };
 
 // Only controls whose effect is clearly visible are shown. Everything else keeps its (preset) value and is still saved/loaded.
 const GROUPS: [string, Path[]][] = [
-  ['Look', ['exposure.gain', 'panel.distance', 'camera.fovY']],
+  ['Look', ['exposure.gain', 'exposure.unevenness', 'panel.distance', 'camera.fovY']],
   ['Animation', ['art.frame', 'art.scrollPerFrame']],
   ['Artwork', ['art.seed']],
   ['Image artwork', ['image.index', 'image.scale', 'image.offsetX', 'image.offsetY', 'image.rotation']],
@@ -67,12 +67,6 @@ export function buildPanel(root: HTMLElement, params: Params, playback: Playback
 
   for (const [title, paths] of GROUPS) {
     const g = document.createElement('h2'); g.textContent = title; root.append(g);
-    if (title === 'Animation') {
-      const play = document.createElement('button');
-      const label = () => (play.textContent = playback.playing ? '❚❚ Pause' : '▶ Play');
-      play.onclick = () => { playback.playing = !playback.playing; label(); onChange(); };
-      label(); root.append(play);
-    }
     if (title === 'Colour separation') root.append(checkbox('separation on', () => params.color.enabled, v => (params.color.enabled = v)));
     if (title === 'Artwork') root.append(select('kind', [...ART_KINDS], () => params.art.kind, v => (params.art.kind = v as Params['art']['kind'])));
     if (title === 'Image artwork') root.append(imageBlock());

@@ -82,6 +82,21 @@ export const DISPLAY_FS = `#version 300 es
 precision highp float;
 in vec2 vUv; out vec4 o;
 uniform sampler2D uAcc; uniform float uGain;
+uniform float uUneven, uFrame, uAspect;
+// Film-like density unevenness: slowly drifting soft blotches plus bands aligned with the streaks (log-polar noise), and a little grain.
+float h31(vec3 p){ p = fract(p*vec3(.1031,.1030,.0973)); p += dot(p, p.yxz + 33.33); return fract((p.x + p.y)*p.z); }
+float vn(vec3 p){ vec3 i = floor(p), f = fract(p); f = f*f*(3. - 2.*f);
+  return mix(mix(mix(h31(i), h31(i + vec3(1,0,0)), f.x), mix(h31(i + vec3(0,1,0)), h31(i + vec3(1,1,0)), f.x), f.y),
+             mix(mix(h31(i + vec3(0,0,1)), h31(i + vec3(1,0,1)), f.x), mix(h31(i + vec3(0,1,1)), h31(i + vec3(1,1,1)), f.x), f.y), f.z); }
+float fbm3(vec3 p){ float s = 0., a = .5; for(int i=0;i<4;i++){ s += a*vn(p); p = p*2.03 + 7.1; a *= .5; } return s/.9375; }
+float density(vec2 uv){
+  vec2 q = (uv - .5)*vec2(uAspect, 1.)*2.; float z = uFrame*.04;
+  float cloud = fbm3(vec3(q*1.6, z)) - .5;
+  float ang = atan(q.y, q.x), lr = log(length(q) + .06);
+  float rays = fbm3(vec3(cos(ang)*2.2, sin(ang)*2.2, lr*1.8 + z*.5)) - .5;
+  float grain = h31(vec3(gl_FragCoord.xy, uFrame)) - .5;
+  return exp(uUneven*(6.0*cloud + 5.4*rays) - .3*uUneven*uUneven) * (1. + uUneven*.2*grain);   // -0.3·u² keeps the average brightness
+}
 uniform int uColorOn, uStripN, uMix, uLowGamma;
 uniform vec2 uContrast;            // high slope, low slope
 uniform float uSat;
@@ -127,6 +142,7 @@ vec3 colorPass(vec3 a){
 void main(){
   vec3 a = texture(uAcc, vUv).rgb;
   a = 1. - exp(-a * uGain);               // soft film shoulder
+  if(uUneven > 0.) a = clamp(a * density(vUv), 0., 1.);   // uneven density of the emulsion (after the shoulder, so bright areas show it too)
   if(uColorOn == 1) a = colorPass(a);
   if(uSat != 1.) a = saturateOut(a, uSat);      // final output saturation (after colour separation; also with it off)
   o = vec4(pow(a, vec3(1./2.2)), 1.);

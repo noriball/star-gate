@@ -24,7 +24,9 @@ from a sub-path, on desktop and phone. There is no backend; everything is comput
   stay straight lines converging on the vanishing point. Untick it (or use `Trumbull-Strict` / `Variant-A`) for the finite,
   research-faithful ends. At gap 0 the two walls meet along the centre line and are cross-faded over ±1% of the frame width, so
   no hard seam line is drawn.
-- **Animation and playback**: Play/Pause, frame scrubber, `art.scrollPerFrame` with an accel curve (linear / ease-in /
+- **Start / Stop button and frame scrubber** sit directly under the picture (Space also toggles playback).
+- **Density unevenness** (`density unevenness`, 0–1, default 0.35): film-like uneven density: slowly drifting soft blotches, bands that follow the streaks, and a little grain, applied after the tone shoulder so bright areas show it too. Deterministic per frame (exports match the preview); 0 gives the perfectly even research look (`Trumbull-Strict` uses 0).
+- **Animation and playback**: frame scrubber, `art.scrollPerFrame` with an accel curve (linear / ease-in /
   exponential). Each wall's artwork flows away from the central gap (`mirror slide`; untick for the old same-direction slide).
   Playback uses `exposure.previewSamples`; paused frames use `exposure.samples`.
 - **Artwork**: five procedural generators: `noise` (default), `crystal`, `circuit`, `bands`, `facets`; or `image`: your own
@@ -65,7 +67,7 @@ npm install
 npm run dev          # http://127.0.0.1:5173
 npm run dev:https    # HTTPS with a self-signed certificate on your LAN address, for testing the camera on a phone (see below)
 ```
-Only controls with a clearly visible effect are shown in the panel (a bottom sheet on narrow screens): *Look* (`exposure.gain`, `panel.distance`, `camera.fovY`), *Animation*, *Artwork*, *Colour separation* (`saturation (output)`, plus the wheel period once separation is on) and, in image mode, the image placement sliders. All other parameters keep their preset values and are still saved/loaded in the params JSON (ranges: `docs/design.md` §4).
+Only controls with a clearly visible effect are shown in the panel (a bottom sheet on narrow screens): *Look* (`exposure.gain`, `density unevenness`, `panel.distance`, `camera.fovY`), *Animation* (frame, scroll speed; Start/Stop is under the picture), *Artwork*, *Colour separation* (`saturation (output)`, plus the wheel period once separation is on) and, in image mode, the image placement sliders. All other parameters keep their preset values and are still saved/loaded in the params JSON (ranges: `docs/design.md` §4).
 
 ## Test / build / preview
 ```sh

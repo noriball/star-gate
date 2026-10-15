@@ -167,6 +167,9 @@ export class SlitScanRenderer {
     gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, this.acc);
     gl.uniform1i(gl.getUniformLocation(this.dispProg, 'uAcc'), 0);
     gl.uniform1f(gl.getUniformLocation(this.dispProg, 'uGain'), p.exposure.gain);
+    gl.uniform1f(gl.getUniformLocation(this.dispProg, 'uUneven'), p.exposure.unevenness);
+    gl.uniform1f(gl.getUniformLocation(this.dispProg, 'uFrame'), p.art.frame);
+    gl.uniform1f(gl.getUniformLocation(this.dispProg, 'uAspect'), p.filmAspect);
     this.uploadColor(p);
     this.quad(-1, 1);
     gl.drawArrays(gl.TRIANGLES, 0, 6);
